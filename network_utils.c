@@ -262,6 +262,8 @@ int server()
                     fds[i].fd = 0;
                     fds[i].events = 0;
                     fds[i].revents = 0;
+                    SSL_free(ssl[i]);
+                    ssl[i] = NULL;
                     if(recieve == -1)
                     {
                         printf("shoudl not be here\n");
