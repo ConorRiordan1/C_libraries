@@ -154,23 +154,26 @@ int ssl_write_all(SSL * ssl_socket, char * buffer, int byte_count)
     }
     return bytes_sent;
 }
-int main(int argc, char **argv)
+SSL_CTX * ctx;
+int nfds;
+struct pollfd fds[MAX_CLIENTS + 1];
+SSL * ssl[MAX_CLIENTS + 1] = { NULL };
+client my_clients[MAX_CLIENTS +1];
+
+
+int server(int argc, char **argv)
 {
-    struct pollfd fds[MAX_CLIENTS + 1] = {0};
-    int nfds = 1;
+    nfds = 1;
     init_my_stuff();
-    int current_size = 0;
-    SSL * ssl[MAX_CLIENTS + 1] = { NULL };
 
     /* Ignore broken pipe signals */
     //signal(SIGPIPE, SIG_IGN);
     SSL_load_error_strings();
-    SSL_CTX * ctx = create_context();
+    ctx = create_context();
     configure_context(ctx);
 
     int server_fd = create_socket(SERVER_PORT);
     //set_non_blocking(server_fd);
-
     fds[0].fd = server_fd;
     fds[0].events = POLLIN;
 
@@ -217,10 +220,22 @@ int main(int argc, char **argv)
                         SSL_write(new_ssl, greeting, strlen(greeting));
 
                         // We can now add the new FD
-                        fds[nfds].fd = client;
-                        fds[nfds].events = POLLIN;
-                        ssl[nfds] = new_ssl;
-                        nfds++;
+
+                        for(int idx = 1; idx <CONN_MAX; idx++)
+                        {
+                            if (fds[idx].fd == 0)
+                            {
+                                fds[nfds].fd = client;
+                                fds[nfds].events = POLLIN;
+                                ssl[nfds] = new_ssl;
+                                nfds++;
+                                break;
+                            }
+                            else
+                            {
+                                printf("there has been an error");
+                            }
+                        }
                     }                            
                     else
                     {
@@ -246,7 +261,9 @@ int main(int argc, char **argv)
                     printf("here");
 
                     int recieve = push_sockets(my_socket_info);
-                    fds[i] = fds[--nfds];
+                    fds[i].fd = 0;
+                    fds[i].events = 0;
+                    fds[i].revents = 0;
                     if(recieve == -1)
                     {
                         printf("shoudl not be here\n");
@@ -280,4 +297,30 @@ int main(int argc, char **argv)
     close(server_fd);
     SSL_CTX_free(ctx);
     return 0;
+}
+
+int finish_it()
+{
+        //int server_fd = fds[0].fd;
+        //close(server_fd);
+        printf("i am hersdsade\n");
+        for(int idx = 0; idx <MAX_CLIENTS+1;idx++)
+        {
+            if (fds[idx].fd != 0)
+            {
+                close(fds[idx].fd);
+            }
+        }
+
+        for(int idx = 0; idx <MAX_CLIENTS+1;idx++)
+        {
+            if (ssl[idx] != NULL)
+            {
+                SSL_free(ssl[idx]);
+                printf("freeing emmeory\n");
+            }
+        }
+        tpool_destroy(tm);
+        //SSL_CTX_free(ctx);
+        exit(1);
 }

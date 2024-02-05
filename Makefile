@@ -1,11 +1,11 @@
 # Makefile
 
 CC = gcc
-CFLAGS = -Wall -Wextra -fsanitize=thread -g
+CFLAGS = -Wall -Wextra -g
 
 # Source files
 SRC_CLIENT = client.c
-SRC_SERVER = example.c queue.c threadpool.c network_utils.c
+SRC_SERVER = main.c network_utils.c example.c queue.c threadpool.c
 # Output files
 
 OUT_SERVER = server

@@ -4,10 +4,9 @@
 
 queue_root my_queue;
 pthread_mutex_t queue_mutex;
-tpool_t *tm;
 
 
-
+tpool_t * tm;
 
 void read_from_socket(void * arg)
 {   
@@ -29,11 +28,13 @@ void read_from_socket(void * arg)
             printf("Error in SSL_read\n");
             close(poll_descriptor.fd);
             //descriptors->fds[descriptors->index] = descriptors->fds[--descriptors->num_file_desc];
-            return;
+            goto EXIT;
         }
-        return;
+        goto EXIT;
 
-    free(arg);
+    EXIT:
+        free(arg);
+        return;
 }
 
 
@@ -42,7 +43,6 @@ int push_sockets(socket_info * socket_desc) // old main
 
     //printf(" I am push socket, I got this %d\n",socket);
     printf("\nin example\n");
-
 
     tpool_add_work(tm,read_from_socket,socket_desc);
 
@@ -73,9 +73,9 @@ int push_sockets(socket_info * socket_desc) // old main
 
 int init_my_stuff()
 {
-    init_queue(&my_queue);
-
+    //init_queue(&my_queue);
     tm = tpool_create(3);
-    pthread_mutex_init(&queue_mutex,NULL);
+
+    ///pthread_mutex_init(&queue_mutex,NULL);
 
 }

@@ -84,6 +84,8 @@ static void *tpool_worker(void *arg)
 
 tpool_t *tpool_create(size_t num)
 {
+
+
     tpool_t   *tm;
     pthread_t  thread;
     size_t     i;
@@ -95,6 +97,7 @@ tpool_t *tpool_create(size_t num)
     tm->thread_cnt = num;
 
     pthread_mutex_init(&(tm->work_mutex), NULL);
+    printf("init\n");
     pthread_cond_init(&(tm->work_cond), NULL);
     pthread_cond_init(&(tm->working_cond), NULL);
 
@@ -102,7 +105,6 @@ tpool_t *tpool_create(size_t num)
     tm->work_last  = NULL;
 
     for (i=0; i<num; i++) {
-        printf("calling pthread createa\n");
         pthread_create(&thread, NULL, tpool_worker, tm);
         pthread_detach(thread);
     }
@@ -116,9 +118,14 @@ void tpool_destroy(tpool_t *tm)
     tpool_work_t *work2;
 
     if (tm == NULL)
+    {
+        printf("oopsie");
         return;
 
+    }
+
     pthread_mutex_lock(&(tm->work_mutex));
+    printf("i am herehere\n");
     work = tm->work_first;
     while (work != NULL) {
         work2 = work->next;

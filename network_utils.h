@@ -22,7 +22,15 @@
 #include <fcntl.h>
 
 
+extern struct pollfd fds[MAX_CLIENTS + 1];
+extern SSL_CTX * ctx;
+int server();
+int finish_it();
 
-int main();
+typedef struct client
+{
+    struct pollfd * client_socket;
+    SSL * client_ssl;
+}client;
 
 #endif

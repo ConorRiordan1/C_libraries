@@ -19,7 +19,7 @@
 #define SV_SOCK_PATH "/tmp/us_xfr"
 #define min(a, b)    (((a) < (b)) ? (a) : (b))
 
-
+extern tpool_t *tm;
 
 typedef struct account_t
 {
