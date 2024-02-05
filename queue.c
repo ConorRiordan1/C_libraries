@@ -17,6 +17,7 @@ void init_queue(struct queue_root* queue){
 }
 
 void push_queue(queue_root* queue, int size, void * socket_num){
+	printf("this is size, an unused varaible %d\n",size);
 	queue_item *item = malloc(sizeof(queue_item));//change depending on type
 	item->socket_num = socket_num;
 	item->next = NULL;

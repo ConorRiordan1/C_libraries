@@ -47,7 +47,7 @@ void endless()
 /// @param argc number of arguments
 /// @param argv argument vector
 /// @return 1
-int main(int argc, char * argv[])
+int main()
 {
 
     struct sigaction sa = {.sa_handler = sighandler};
@@ -56,10 +56,8 @@ int main(int argc, char * argv[])
 
     endless();
 
-    return 1;
 
-    EXIT:
-        return -1;
+    return 1;
 }
 
 ///*END OF FILE*///

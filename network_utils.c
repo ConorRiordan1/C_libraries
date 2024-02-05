@@ -161,7 +161,7 @@ SSL * ssl[MAX_CLIENTS + 1] = { NULL };
 client my_clients[MAX_CLIENTS +1];
 
 
-int server(int argc, char **argv)
+int server()
 {
     nfds = 1;
     init_my_stuff();
@@ -245,7 +245,6 @@ int server(int argc, char **argv)
                 else 
                 {
                     // Handle data from client
-                    char buffer[BUFFER_SIZE] = {0};
                     // normally a loop to handle partial recv would go here, but since we don't know 
                     // how much data to expect, we're ommitting it for now. A program with some
                     // protocol specific header size could instead read the header_size instead
@@ -258,7 +257,6 @@ int server(int argc, char **argv)
                     my_socket_info->index = i;
                     my_socket_info->num_file_desc = nfds;
                     my_socket_info->fds = fds;
-                    printf("here");
 
                     int recieve = push_sockets(my_socket_info);
                     fds[i].fd = 0;

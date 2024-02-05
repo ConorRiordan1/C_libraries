@@ -78,4 +78,6 @@ int init_my_stuff()
 
     ///pthread_mutex_init(&queue_mutex,NULL);
 
+    return 0;
+
 }
