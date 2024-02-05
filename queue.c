@@ -16,7 +16,7 @@ void init_queue(struct queue_root* queue){
 	queue->tail = NULL;
 }
 
-void push_queue(queue_root* queue, int size, int socket_num){
+void push_queue(queue_root* queue, int size, void * socket_num){
 	queue_item *item = malloc(sizeof(queue_item));//change depending on type
 	item->socket_num = socket_num;
 	item->next = NULL;
@@ -30,10 +30,10 @@ void push_queue(queue_root* queue, int size, int socket_num){
 }
 
 
-int pop_queue(queue_root* queue){
-	int popped;
+void * pop_queue(queue_root* queue){
+	void * popped;
 	if (queue->head == NULL){
-		return 0; // causes a compile warning.  Just check for ==NULL when popping.
+		return NULL; // causes a compile warning.  Just check for ==NULL when popping.
 	} else {
 		popped = queue->head->socket_num;
 		struct queue_item* next = queue->head->next;
@@ -46,6 +46,9 @@ int pop_queue(queue_root* queue){
 }
 
 
+/// @brief return 1 if empty, 0 if not empty
+/// @param my_queue 
+/// @return 
 int is_empty(queue_root * my_queue)
 {
 	if (my_queue->head == NULL)

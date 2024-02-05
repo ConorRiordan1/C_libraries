@@ -1,6 +1,6 @@
 #ifndef __NETWORK_UTILS__
 #define __NETWORK_UTILS__
-
+#include "example.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <arpa/inet.h>
@@ -10,24 +10,18 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#define MY_PORT      8000
-#define CONN_MAX     8
-#define SV_SOCK_PATH "/tmp/us_xfr"
-#define min(a, b)    (((a) < (b)) ? (a) : (b))
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <poll.h>
 
-typedef struct account_t
-{
-    int account_id;
-    int balance;
-    int num_deposits;
-    int num_withdrawals;
-} account_t;
 
-typedef struct transaction_t
-{
-    int32_t account_id;
-    int32_t amount;
-} __attribute__((packed)) transaction_t;
+#include <stdio.h>
+#include <string.h>
+#include <signal.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+
+
 
 int main();
 

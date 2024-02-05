@@ -1,19 +1,5 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <signal.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <fcntl.h>
-#include <poll.h>
-#include "example.h"
 
-#define MAX_CLIENTS 100
-#define SERVER_PORT 4433
-#define BUFFER_SIZE 1024
-
+#include "network_utils.h"
 int set_non_blocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags < 0) return -1;
@@ -168,16 +154,16 @@ int ssl_write_all(SSL * ssl_socket, char * buffer, int byte_count)
     }
     return bytes_sent;
 }
-
 int main(int argc, char **argv)
 {
-    init_my_stuff();
     struct pollfd fds[MAX_CLIENTS + 1] = {0};
-    int nfds = 1, current_size = 0;
-    SSL * ssl[MAX_CLIENTS] = { NULL };
+    int nfds = 1;
+    init_my_stuff();
+    int current_size = 0;
+    SSL * ssl[MAX_CLIENTS + 1] = { NULL };
 
     /* Ignore broken pipe signals */
-    signal(SIGPIPE, SIG_IGN);
+    //signal(SIGPIPE, SIG_IGN);
     SSL_load_error_strings();
     SSL_CTX * ctx = create_context();
     configure_context(ctx);
@@ -197,7 +183,7 @@ int main(int argc, char **argv)
     for (;;)
     {
         int ret = poll(fds, nfds, -1);
-        printf("new  poll");
+        //printf("new  poll");
         if (ret < 0) {
             perror("Poll error");
             break;
@@ -250,8 +236,23 @@ int main(int argc, char **argv)
                     // protocol specific header size could instead read the header_size instead
                     // of the BUFFER_SIZE and then make decisions to read more once deserializing
                     // the header.
-                    push_sockets(ssl[i]);
-                    int bytes_recv = SSL_read(ssl[i], buffer, BUFFER_SIZE - 1);
+                    socket_info * my_socket_info = malloc(sizeof(socket_info));
+
+                    my_socket_info->file_descriptor = fds[i];
+                    my_socket_info->ssl_socket = ssl[i];
+                    my_socket_info->index = i;
+                    my_socket_info->num_file_desc = nfds;
+                    my_socket_info->fds = fds;
+                    printf("here");
+
+                    int recieve = push_sockets(my_socket_info);
+                    fds[i] = fds[--nfds];
+                    if(recieve == -1)
+                    {
+                        printf("shoudl not be here\n");
+                        close(fds[i].fd);
+
+                    }
                     /*
                     if (0 >= bytes_recv)
                     {
