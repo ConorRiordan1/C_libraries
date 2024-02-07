@@ -1,10 +1,5 @@
 
 #include "network_utils.h"
-int set_non_blocking(int fd) {
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0) return -1;
-    return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-}
 
 int create_socket(int port)
 {
@@ -74,92 +69,41 @@ void configure_context(SSL_CTX *ctx)
     }
 }
 
-int ssl_accept_loop(SSL * new_ssl, int client_fd)
-{
-    int accept_check = -1;
-    while (0 > accept_check)
-    {
-        accept_check = SSL_accept(new_ssl);
-        if (0 > accept_check)
-        {
-            int err_code = SSL_get_error(new_ssl, accept_check);
-            if ((err_code != SSL_ERROR_WANT_ACCEPT) &&
-                (err_code != SSL_ERROR_WANT_READ) &&
-                (err_code != SSL_ERROR_WANT_WRITE))
-            {
-                // Handle SSL_accept error
-                printf("This is error code %d\n",err_code);
-                ERR_print_errors_fp(stderr);
-                SSL_free(new_ssl);
-                close(client_fd);
-                // We DO NOT close/free the SSL_CTX since it's reused for every new fd
-                break;
-            }
-        }
-    }
 
-    return accept_check;
-}
 
-int ssl_read_all(SSL * ssl_socket, char * buffer, int limit)
-{
-    int bytes_recv = -1;
-    while (0 >= bytes_recv)
-    {
-        bytes_recv = SSL_read(ssl_socket, buffer, limit);
-        if (0 > bytes_recv)
-        {
-            int ssl_err = SSL_get_error(ssl_socket, bytes_recv);
-            // These errors are fine, we'll just try again.
-            // To view why these errors are ok, read the man page:
-            // https://www.openssl.org/docs/manmaster/man3/SSL_read.html
-            if ((ssl_err != SSL_ERROR_WANT_READ) && (ssl_err != SSL_ERROR_WANT_WRITE))
-            {
-                // Errors other than SSL_ERROR_WANT_READ and SSL_ERROR_WANT_WRITE
-                // should result in closing the connection and it's associated
-                // SSL resources
-                SSL_shutdown(ssl_socket);
-                SSL_free(ssl_socket);
-                bytes_recv = -1;
-                break;
-            }
-        }
-    }
-    return bytes_recv;
-}
-int ssl_write_all(SSL * ssl_socket, char * buffer, int byte_count)
-{
-    printf("This got called");
-    int bytes_sent = 0;
-    while (bytes_sent != byte_count)
-    {
-        // echoes back the buffer to the client.
-        int written = SSL_write(ssl_socket, buffer, byte_count);
-        if (0 > written)
-        {
-            int ssl_err = SSL_get_error(ssl_socket, written);
-            // these errors are fine, we will just keep looping if they occur
-            if ((ssl_err != SSL_ERROR_WANT_READ) && (ssl_err != SSL_ERROR_WANT_WRITE))
-            {
-                SSL_shutdown(ssl_socket);
-                SSL_free(ssl_socket);
-                bytes_sent = -1;
-                break;
-            }
-        }
-        else
-        {
-            bytes_sent += written;
-        }
-    }
-    return bytes_sent;
-}
 SSL_CTX * ctx;
 int nfds;
 struct pollfd fds[MAX_CLIENTS + 1];
 SSL * ssl[MAX_CLIENTS + 1] = { NULL };
 client my_clients[MAX_CLIENTS +1];
 
+
+int handle_exisiting_client(int index)
+{
+    socket_info * my_socket_info = malloc(sizeof(socket_info));
+
+    if(NULL == my_socket_info)
+    {
+        printf("alloc error");
+        return -1;
+    }
+
+    my_socket_info->file_descriptor = fds[index];
+    my_socket_info->ssl_socket = ssl[index];
+    my_socket_info->index = index;
+    my_socket_info->num_file_desc = nfds;
+    my_socket_info->fds = fds;
+
+    int recieve = push_sockets(my_socket_info);
+    fds[index].fd = 0;
+    fds[index].events = 0;
+    fds[index].revents = 0;
+    SSL_free(ssl[index]);
+    ssl[index] = NULL;
+
+    return 1;
+
+}
 
 int server()
 {
@@ -169,11 +113,14 @@ int server()
     /* Ignore broken pipe signals */
     //signal(SIGPIPE, SIG_IGN);
     SSL_load_error_strings();
+
+
     ctx = create_context();
     configure_context(ctx);
 
     int server_fd = create_socket(SERVER_PORT);
-    //set_non_blocking(server_fd);
+
+
     fds[0].fd = server_fd;
     fds[0].events = POLLIN;
 
@@ -186,7 +133,7 @@ int server()
     for (;;)
     {
         int ret = poll(fds, nfds, -1);
-        //printf("new  poll");
+
         if (ret < 0) {
             perror("Poll error");
             break;
@@ -210,9 +157,13 @@ int server()
                     printf("New connection\n");
 
 
+
                     SSL * new_ssl = SSL_new(ctx);
+
                     SSL_set_fd(new_ssl, client);
+
                     int accept_check = SSL_accept(new_ssl);
+
                     if (0 <= accept_check)
                     {
                         // send banner message and add to polling FDs
@@ -225,9 +176,9 @@ int server()
                         {
                             if (fds[idx].fd == 0)
                             {
-                                fds[nfds].fd = client;
-                                fds[nfds].events = POLLIN;
-                                ssl[nfds] = new_ssl;
+                                fds[idx].fd = client;
+                                fds[idx].events = POLLIN;
+                                ssl[idx] = new_ssl;
                                 nfds++;
                                 break;
                             }
@@ -242,7 +193,7 @@ int server()
                         printf("There has been an error");
                     }
                 } 
-                else 
+                else //already existing client
                 {
                     // Handle data from client
                     // normally a loop to handle partial recv would go here, but since we don't know 
@@ -250,45 +201,16 @@ int server()
                     // protocol specific header size could instead read the header_size instead
                     // of the BUFFER_SIZE and then make decisions to read more once deserializing
                     // the header.
-                    socket_info * my_socket_info = malloc(sizeof(socket_info));
+                    if(1 == handle_exisiting_client(i))
 
-                    my_socket_info->file_descriptor = fds[i];
-                    my_socket_info->ssl_socket = ssl[i];
-                    my_socket_info->index = i;
-                    my_socket_info->num_file_desc = nfds;
-                    my_socket_info->fds = fds;
-
-                    int recieve = push_sockets(my_socket_info);
-                    fds[i].fd = 0;
-                    fds[i].events = 0;
-                    fds[i].revents = 0;
-                    SSL_free(ssl[i]);
-                    ssl[i] = NULL;
-                    if(recieve == -1)
                     {
-                        printf("shoudl not be here\n");
-                        close(fds[i].fd);
+                        printf("yay I dealt with a client");
+                    }
+                    else{
+                        printf(" I am a failure at my sole purpose in life");
+                    }
 
-                    }
-                    /*
-                    if (0 >= bytes_recv)
-                    {
-                        printf("client leaving\n");
-                        close(fds[i].fd);
-                        // This line moves the valid last index in the polling fds
-                        // and then moves it to take the place of the fd we just cleaned
-                        // up above. It also decrements nfds so that we can still effeciently
-                        // add new entries and poll through the valid indices
-                        //fds[i] = fds[--nfds];
 
-                        exit(1);
-                    }
-                    else
-                    {
-                        // Note: a proper logging system would be better here.
-                        printf(" I got good data\n");
-                    }
-                    */
                 }
             }
         }

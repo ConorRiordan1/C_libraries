@@ -1,7 +1,7 @@
 # Makefile
 
 CC = gcc
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall -Wextra -g -fsanitize=thread
 
 # Source files
 SRC_CLIENT = client.c
