@@ -1,482 +1,334 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+/** @file linked_list.c
+ *
+ * @brief defines functions for linked list operations
+ *
+ *@par
+ * Author: Conor Riordan
+ */
 
-typedef struct Node
-{
-    int           data;
-    struct Node * next;
-} Node;
+#include "linked_list.h"
 
-typedef struct
-{
-    struct Node * head;
-    struct Node * tail;
-    int           nodeCount;
-} LinkedList;
-
-// function prototypes
-void   initList(LinkedList *);
-int    loadFromFile(LinkedList *, char *);
-void   createListFromRandomNumbers(LinkedList *, int);
-void   insertAtHead(LinkedList *, int);
-void   insertAtTail(LinkedList *, int);
-void   printListDetail(LinkedList *);
-void   printList(LinkedList *);
-Node * find(LinkedList *, int, Node **);
-int    deleteFirst(LinkedList *);
-int    deleteLast(LinkedList *);
-int    deleteTarget(LinkedList *, int);
-void   reverse(LinkedList *);
-
-// to initialize the linkedlist object
-// Input parameter: listp is the pointer to linkedlist object
-// Precondition: LinkedList object pointed by listptr must be existing.
-// Return Value: Nothing
+/// @brief to initialize the linkedlist object
+/// @param lstPtr parameter: listp is the pointer to linkedlist object
+/// @warning linkedlist object pointed by listptr must be existing.
+/// @return Return Value: Nothing
 void
-initList(LinkedList * lstPtr)
+initlist (linkedlist *p_lstptr)
 {
-    lstPtr->head      = NULL;
-    lstPtr->tail      = NULL;
-    lstPtr->nodeCount = 0;
+    p_lstptr->head      = NULL;
+    p_lstptr->tail      = NULL;
+    p_lstptr->nodecount = 0;
 }
 
-// To add a new node at the end of the LinkedList
-// Input parameters: pointer to struct LinkedList, an integer data that will
-//                   be the content  of the new node.
-// Precondition: The linkedList object must be existing.
-// Return Value: Nothing
-void
-insertAtTail(LinkedList * listPtr, int data)
+
+/// @brief inserts an element to end of linked list
+/// @param p_listptr linked list
+/// @param username username
+/// @param password password
+/// @param username_len username len
+/// @param password_len password len
+/// @return new node on success, NULL on fail
+node *
+insertattail (linkedlist * p_listptr, char *username, char *password, int username_len, int password_len)
 {
-    Node * newNodePtr = (Node *)malloc(sizeof(Node));
-    if (newNodePtr == NULL)
+    node * p_node = (node *)malloc(sizeof(node));
+
+    memset(p_node, '\0', sizeof(p_node));
+
+    if (p_node == NULL)
     {
         printf("Unable to allocate new node\n");
-        return;
+        return NULL;
     }
-    newNodePtr->data = data;
-    newNodePtr->next = NULL;
 
-    if (listPtr->nodeCount == 0)
+    strncpy(p_node->username, username, username_len);
+    strncpy(p_node->password, password, password_len);
+    p_node->next = NULL;
+
+
+    if (p_listptr->nodecount == 0)
     {
         // this is the case when the list is empty
-        listPtr->head = newNodePtr;
-        listPtr->tail = newNodePtr;
+        p_listptr->head = p_node;
+        p_listptr->tail = p_node;
     }
     else
     {
         // this is the case when the list is not empty
-        listPtr->tail->next = newNodePtr;
-        listPtr->tail       = newNodePtr;
+        p_listptr->tail->next = p_node;
+        p_listptr->tail       = p_node;
     }
-    listPtr->nodeCount++;
+
+    p_listptr->nodecount++;
+
+    return p_node;
 }
 
-// To add a new node at the begining of the LinkedList
-// Input parameters: pointer to struct LinkedList, an integer data that will
-//                   be the content  of the new node.
-// Precondition: The linkedList object must be existing.
-// Return Value: Nothing
-
+/// @brief prints a linked list from head to tail w/ pointer information
+/// @param lstPtr linked list to be printed
+/// @warning linked list has to be initialized before calling this function
 void
-insertAtHead(LinkedList * listPtr, int data)
+printlistdetail (linkedlist * p_lstptr)
 {
-    Node * newNodePtr = (Node *)malloc(sizeof(Node));
-    if (newNodePtr == NULL)
-    {
-        printf("Unable to allocate new node\n");
-        return;
-    }
-    newNodePtr->data = data;
-    newNodePtr->next = NULL;
-
-    if (listPtr->nodeCount == 0)
-    {
-        // this is the case when the list is empty
-        listPtr->head = newNodePtr;
-        listPtr->tail = newNodePtr;
-    }
-    else
-    {
-        // this is the case when the list is not empty
-        newNodePtr->next = listPtr->head;
-        listPtr->head    = newNodePtr;
-    }
-    listPtr->nodeCount++;
-}
-
-void
-printListDetail(LinkedList * lstPtr)
-{
-    if (lstPtr->nodeCount == 0)
+    if (p_lstptr->nodecount == 0)
     {
         printf("Linked list is empty\n");
         return;
     }
+
     printf("Printing linked list in details\n");
-    printf("HEAD: %p\n", lstPtr->head);
-    Node * current = lstPtr->head;
-    int    counter = 1;
+    printf("HEAD: %p\n", p_lstptr->head);
+
+    node *current = p_lstptr->head;
+    int   counter = 1;
+
     while (current != NULL)
     {
-        printf("%d. (%p)[%d|%p]\n",
+        printf("%d. (%p)[%s and %s|%p]\n",
                counter,
                current,
-               current->data,
+               current->username,
+               current->password,
                current->next);
         current = current->next;
         counter++;
     }
-    printf("TAIL: %p\n", lstPtr->tail);
+
+    printf("TAIL: %p\n", p_lstptr->tail);
 }
 
-void
-printList(LinkedList * lstPtr)
-{
-    if (lstPtr->nodeCount == 0)
-    {
-        printf("Linked list is empty\n");
-        return;
-    }
-    Node * current = lstPtr->head;
-    while (current != NULL)
-    {
-        printf("%d\n", current->data);
-        current = current->next;
-    }
-}
 
-Node *
-find(LinkedList * lstPtr, int target, Node ** prvPtr)
+/// @brief Function that finds a node in linked list, confirming both username
+/// and password match
+/// @param p_lstptr pointer to linked list
+/// @param username username to search
+/// @param password password to search
+/// @return NULL if node not found, or pointer to node with matching usernamer +
+/// password
+/// @warning linked list has to be initialized before calling this function
+node *
+find_with_password (linkedlist *p_lstptr,
+                    char       *username,
+                    char       *password)
 {
 
-    Node * current = lstPtr->head;
-    *prvPtr        = NULL;
+    if (p_lstptr == NULL || p_lstptr->head == NULL)
+    {
+        goto END; // Handling null pointer
+    }
+
+    node *current = p_lstptr->head;
+
+
     while (current != NULL)
     {
-
-        if (current->data == target)
+    
+        if ((strlen(current->username) == strlen(username))
+            && (strcmp(current->username, username) == 0)
+            && (strlen(current->password) == strlen(password))
+            && (strcmp(current->password, password) == 0))
         {
-            break;
+            return current; // node found
         }
-        *prvPtr = current;
+
         current = current->next;
     }
-    return current;
+
+END:
+    return NULL; // node not found
 }
 
-int
-deleteTarget(LinkedList * lstPtr, int target)
+/// @brief function that searches linked list, finding node with matching
+/// username
+/// @param lstPtr pointer to linked list
+/// @param username username to find
+/// @param prvPtr pointer to NULL
+/// @return NULL or pointer to found node
+/// @warning linked list has to be initialized before calling this function
+node *
+find (linkedlist *p_lstptr, char *username)
 {
-    Node *current = NULL, *prev = NULL;
-    current = find(lstPtr, target, &prev);
+    if (p_lstptr == NULL || p_lstptr->head == NULL)
+    {
+        goto END; // Handling null pointer
+    }
+
+    node *current = p_lstptr->head;
+
+    while (current != NULL)
+    {
+        if ((strlen(current->username) == strlen(username))
+            && (strcmp(current->username, username) == 0))
+        {
+            return current; // node found
+        }
+
+        current = current->next;
+    }
+
+END:
+    return NULL; // node not found
+}
+
+
+static node *
+delete_find (linkedlist *p_lstptr,
+                    char       *username,
+                    node      **pp_prvptr)
+{
+
+    if (p_lstptr == NULL || p_lstptr->head == NULL)
+    {
+        goto END; // Handling null pointer
+    }
+
+    node *current = p_lstptr->head;
+    *pp_prvptr       = NULL;
+
+    while (current != NULL)
+    {
+    
+        if ((strlen(current->username) == strlen(username))
+            && (strcmp(current->username, username) == 0))
+        {
+            return current; // node found
+        }
+
+        *pp_prvptr = current;
+        current = current->next;
+    }
+
+END:
+    return NULL; // node not found
+} 
+
+/// @brief function that removes a node from linked list
+/// @param lstPtr Pointer to linked list
+/// @param username username to remove
+/// @return NULL upon failure, username of removed user on success
+/// @warning linked list has to be initialized before calling this function
+char *
+deletetarget (linkedlist *p_lstptr, char *username)
+{
+    node *current = NULL;
+    node * p_prev = NULL;
+    current       = delete_find(p_lstptr, username, &p_prev);
 
     if (current == NULL)
     {
-        return -9999;
+        return NULL;
     }
-    int data = current->data;
-    if (current == lstPtr->head)
+
+    char *data = current->username;
+
+    if (current == p_lstptr->head)
     {
-        // if the target is the first Node
-        return deleteFirst(lstPtr);
+        // if the target is the first node
+        return deletefirst(p_lstptr);
     }
-    else if (current == lstPtr->tail)
+    else if (current == p_lstptr->tail)
     {
-        return deleteLast(lstPtr);
+        return deletelast(p_lstptr);
     }
     else
     {
 
-        prev->next = current->next;
+        p_prev->next = current->next;
         free(current);
-        lstPtr->nodeCount--;
+        p_lstptr->nodecount--;
         return data;
     }
 }
 
-int
-loadFromFile(LinkedList * lstPtr, char * fileName)
+/// @brief deletes first element in a linked list
+/// @param lstPtr pointer to linked list
+/// @return username of elemement removed
+/// @warning linked list has to be initialized before calling this function
+char *
+deletefirst (linkedlist *p_lstptr)
 {
-    FILE * inputFile = fopen(fileName, "r");
-    if (inputFile == NULL)
+    if (p_lstptr->nodecount == 0)
     {
-        return 0;
+        return NULL;
     }
-    int data;
-    fscanf(inputFile, "%d", &data);
-    while (!feof(inputFile))
-    {
-        insertAtTail(lstPtr, data);
-        fscanf(inputFile, "%d", &data);
-    }
-    fclose(inputFile);
-    return 1;
-}
-void
-createListFromRandomNumbers(LinkedList * lstPtr, int n)
-{
-    int i;
-    srand(time(NULL));
 
-    for (i = 1; i <= n; ++i)
-    {
-        int k = rand() % 1000;
-        insertAtTail(lstPtr, k);
-    }
-}
+    node *first = p_lstptr->head;
+    char *data  = first->username;
 
-int
-deleteFirst(LinkedList * lstPtr)
-{
-    if (lstPtr->nodeCount == 0)
-    {
-        return -9999;
-    }
-    Node * first = lstPtr->head;
-    int    data  = first->data;
-
-    if (lstPtr->nodeCount == 1)
+    if (p_lstptr->nodecount == 1)
     {
         // there is only one node
-        lstPtr->head = NULL;
-        lstPtr->tail = NULL;
+        p_lstptr->head = NULL;
+        p_lstptr->tail = NULL;
     }
     else
     {
         // there are many nodes and we need to delete the first
-        lstPtr->head = first->next;
+        p_lstptr->head = first->next;
     }
     free(first);
-    lstPtr->nodeCount--;
+    p_lstptr->nodecount--;
     return data;
 }
 
-int
-deleteLast(LinkedList * lstPtr)
+/// @brief deletes last element in a linked list
+/// @param lstPtr pointer to linked list
+/// @return username of elemement removed
+/// @warning linked list has to be initialized before calling this function
+char *
+deletelast (linkedlist *p_lstptr)
 {
     // if linked list is empty
-    if (lstPtr->nodeCount == 0)
+    if (p_lstptr->nodecount == 0)
     {
-        return -9999; // returning absurd value to caller
+        return NULL; // returning absurd value to caller
     }
 
-    Node * current = lstPtr->head;
-    Node * last    = lstPtr->tail;
-    int    data    = last->data;
+    node *current = p_lstptr->head;
+    node *last    = p_lstptr->tail;
+    char *data    = last->username;
 
-    if (lstPtr->nodeCount == 1)
+    if (p_lstptr->nodecount == 1)
     {
-        // if there is only one node, then we need to delete that node,
-        // so we must assign NULL to both head and tail pointer, as the
-        // linked list would be empty after this operation.
-        lstPtr->head = NULL;
-        lstPtr->tail = NULL;
+        // if there is only one node, head && tail = NULL
+        p_lstptr->head = NULL;
+        p_lstptr->tail = NULL;
     }
     else
     {
-        // there are many nodes and we need to search for the second last node
-        // and assign that to tail.
-        while (current->next != lstPtr->tail)
+        // reach just before tail
+        while (current->next != p_lstptr->tail)
         {
             current = current->next;
         }
-        lstPtr->tail       = current;
-        lstPtr->tail->next = NULL;
+
+        p_lstptr->tail       = current;
+        p_lstptr->tail->next = NULL;
     }
     free(last);
-    lstPtr->nodeCount--;
+    p_lstptr->nodecount--;
     return data;
 }
 
+/// @brief destroys a linked list
+/// @param lstPtr pointer to linked list
+/// @warning linked list has to be initialized before calling this function
 void
-reverse(LinkedList * lstPtr)
+destroylist (linkedlist *p_lstptr)
 {
-    if (lstPtr->nodeCount <= 1)
-    {
-        return;
-    }
-    // declaring 3 Node pointers for doing the reversal
-    Node *p, *q, *r;
-    // p is current node, q is just previous to p and r is just immediate next
-    // to p
-    q = NULL;
-    p = lstPtr->head;
-    r = p->next;
-    while (1)
-    {
-        // reverse the link
-        p->next = q;
-        if (p == lstPtr->tail)
-            break;
-        // shift the pointers towards right
-        q = p;
-        p = r;
-        r = r->next;
-    }
-    lstPtr->tail = lstPtr->head;
-    lstPtr->head = p;
-}
+    node *current = p_lstptr->head;
 
-void
-destroyList(LinkedList * lstPtr)
-{
-    Node * current = lstPtr->head;
     while (current != NULL)
     {
-        Node * temp = current;
-        current     = current->next;
+        node *temp = current;
+        current    = current->next;
         free(temp);
     }
 
-    // Reset the linked list attributes
-    lstPtr->head      = NULL;
-    lstPtr->tail      = NULL;
-    lstPtr->nodeCount = 0;
+    // reset Linked list
+    p_lstptr->head      = NULL;
+    p_lstptr->tail      = NULL;
+    p_lstptr->nodecount = 0;
 }
 
-void
-menu()
-{
-    printf("    Singly Linked List Operations\n");
-    printf("----------------------------------------\n");
-    printf("1. Load from file\n"); // load integer data from file and will
-                                   // create the list by using insert_at_tail
-                                   // operation (menu option 3)
-    printf("2. Create list with random numbers\n");
-    printf("3. Insert at head\n"); // inserting a new node as the first node
-    printf("4. Insert at tail\n"); // inserting a new node as the last node
-    printf("5. Print List (detail)\n"); // printing the linked list in details,
-                                        // including the data and pointer in
-                                        // each node
-    printf(
-        "6. Print List (data only)\n"); // prints the integer data in each node
-    printf("7. Find\n");         // finds if an integer exisits in a node from
-                                 // the start in the list
-    printf("8. Delete first\n"); // deletes the first node
-    printf("9. Delete last\n");  // deletes the last node
-    printf("10. Delete a target node\n"); // deletes a particular node, if that
-                                          // exists
-    printf("11.Reverse\n");               // will physically reverse the list
-    printf("12. Quit\n");                 // to terminate each node
-}
-
-int
-main()
-{
-    LinkedList list;
-    initList(&list);
-    int choice;
-    menu();
-    int   quit = 0;
-    int   data, n, target;
-    int   success;
-    Node *current = NULL, *prev = NULL;
-    while (!quit)
-    {
-        printf("Please input your choice: ");
-        scanf("%d", &choice);
-
-        switch (choice)
-        {
-            case 1:
-                success = loadFromFile(&list, "data.txt");
-                if (success == 1)
-                    printf("File has been loaded successfully\n");
-                else
-                    printf(
-                        "There was some error while loading and creating the "
-                        "list\n");
-                break;
-            case 2:
-                printf(
-                    "Enter number of integers to be generated and added into "
-                    "the list: ");
-                scanf("%d", &n);
-                createListFromRandomNumbers(&list, n);
-                break;
-            case 3:
-                // ask to input
-                printf("Input data to insert at head (as first node): ");
-                scanf("%d", &data);
-                insertAtHead(&list, data);
-
-                break;
-            case 4:
-                printf("Input data to insert at tail (as last node): ");
-                scanf("%d", &data);
-                insertAtTail(&list, data);
-                break;
-            case 5:
-                printListDetail(&list);
-                break;
-            case 6:
-                printList(&list);
-                break;
-            case 7:
-                printf("Enter target to find: ");
-                scanf("%d", &data);
-                current = find(&list, data, &prev);
-                if (current == NULL)
-                {
-                    printf("Target not found in the Linkedlist\n");
-                }
-                else
-                {
-                    printf(
-                        "Target node exists, address of the target node: %p, "
-                        "previous: %p\n",
-                        current,
-                        prev);
-                }
-                break;
-            case 8:
-                data = deleteFirst(&list);
-                if (data == -9999)
-                {
-                    printf("Linkedlist is empty\n");
-                }
-                else
-                {
-                    printf("First node has been deleted, data: %d\n", data);
-                }
-                break;
-            case 9:
-                data = deleteLast(&list);
-                if (data == -9999)
-                {
-                    printf("Linkedlist is empty\n");
-                }
-                else
-                {
-                    printf("Last node has been deleted, data: %d\n", data);
-                }
-
-                break;
-            case 10:
-                printf("Enter target to find: ");
-                scanf("%d", &target);
-                data = deleteTarget(&list, target);
-                if (data == -9999)
-                {
-                    printf("Target %d does not exists in the list\n", target);
-                }
-                else
-                {
-                    printf("Target node with data: %d, deleted successfully\n",
-                           data);
-                }
-                break;
-            case 11:
-                reverse(&list);
-                break;
-            case 12:
-                quit = 1;
-                destroyList(&list);
-                break;
-            default:
-                printf("Invalid option chosen, valid option is from 1 - 11\n");
-        }
-    }
-}
+/*** end of file***/
