@@ -1,0 +1,5 @@
+{
+    "clang-format.executable": "/usr/bin/clang-format-15",
+    "clang-format.assumeFilename": "/home/student/library/.clang-format"
+    
+}
