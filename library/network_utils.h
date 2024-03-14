@@ -25,7 +25,7 @@
 #include <signal.h>
 #include "processing.h"
 
-#define TIMEOUT_LIMIT 1000 // timeout in seconds
+#define TIMEOUT_LIMIT 5 // timeout in seconds
 #define IPV4 4
 #define IPV6 6
 #define POLL_RETURN_RATE 5000

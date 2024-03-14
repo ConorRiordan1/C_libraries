@@ -1,0 +1,4 @@
+{
+    "clang-format.assumeFilename": "/home/student/.clang-format-barrc",
+    "clang-format.executable": "clang-format"
+}

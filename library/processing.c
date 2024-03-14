@@ -16,7 +16,9 @@
 /// @warning use onnly as shown, invalid command will produce undefined output
 
 pthread_mutex_t printf_mutex;
-static void sort_login_command(login_command_t *command) {
+
+static void sort_login_command(login_command_t *command)
+{
   printf("hi\n");
   free(command);
 }
@@ -33,7 +35,8 @@ static void sort_user_del_command(user_del_command_t *command) {
 /// opcode!
 /// @param command linkadd_command_t
 /// @warning use onnly as shown, invalid command will produce undefined output
-static void sort_link_add_command(linkadd_command_t *command) {
+static void sort_link_add_command(linkadd_command_t *command)
+{
   printf("hi\n");
   free(command);
 }
@@ -262,7 +265,8 @@ int process_data(client_t *my_client, char *buffer, size_t valread,
   return 1;
 }
 
-int is_ascii(const char *str) {
+int is_ascii(const char *str)
+{
   while (*str) {
     if (!isalnum((unsigned char)*str) && !ispunct((unsigned char)*str) &&
         *str != ' ') {
@@ -273,17 +277,22 @@ int is_ascii(const char *str) {
   return 1;
 }
 
-int is_ascii_no_punct(const char *str) {
-  while (*str) {
+int is_ascii_no_punct(const char *str)
+{
+
+  while (*str)
+  {
     if (!isalnum((unsigned char)*str) && *str != ' ') {
       return 0;
     }
     str++;
   }
+
   return 1;
 }
 
-void send_error(client_t *client) {
+void send_error(client_t *client)
+{
   char response = UNKNOWN_ERROR;
   pthread_mutex_lock(&client->mutex);
   send(client->socket_fd, &response, sizeof(response), 0);
@@ -291,7 +300,8 @@ void send_error(client_t *client) {
   return;
 }
 
-void helgrind_printf(const char *format, const char *username) {
+void helgrind_printf(const char *format, const char *username)
+{
 
   pthread_mutex_lock(&printf_mutex);
 
@@ -303,6 +313,9 @@ void helgrind_printf(const char *format, const char *username) {
   pthread_mutex_unlock(&printf_mutex);
 }
 
-void init_print_mutex(void) { pthread_mutex_init(&printf_mutex, NULL); }
+void init_print_mutex(void) 
+{
+  pthread_mutex_init(&printf_mutex, NULL);
+}
 
 /* END OF FILE*/

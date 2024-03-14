@@ -1,0 +1,10 @@
+flowchart TD
+    Q{poll fds} --> A
+    A[Data Recieved] -->|Is new connection| B(process new connection)
+    A-->|valread is zero|G[*close the client socket\n* reset nth index of client_sockets]
+    A --> |existing client| C[read data in, process request]
+    B -->D[*assign client avalaible client_t struct in array of client sockets, at index n\n* n, is chosen as the first client_t struct in array where socket_fd = 0\n*n != 0, as the zeroith index represents the server]
+    D -->E[*assign client poll_fd struct in fds, at index n\n *ensure socket_fd's of fds and client_sockets match at the nth index]
+    E -->F[New client is now an existing client]
+    Q --> |A client has timed out\naccording to timeout limit variable|H
+    H --> J[Treat client as a disconnect and reset socket] 
