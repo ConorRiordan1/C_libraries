@@ -205,9 +205,9 @@ END:
 /// @brief function that removes a node from linked list
 /// @param lstPtr Pointer to linked list
 /// @param username username to remove
-/// @return NULL upon failure, username of removed user on success
+/// @return -1 on failure, 0 on success
 /// @warning linked list has to be initialized before calling this function
-char *
+int
 deletetarget (linkedlist *p_lstptr, char *username)
 {
     node *current = NULL;
@@ -216,10 +216,9 @@ deletetarget (linkedlist *p_lstptr, char *username)
 
     if (current == NULL)
     {
-        return NULL;
+        return 0;
     }
 
-    char *data = current->username;
 
     if (current == p_lstptr->head)
     {
@@ -236,7 +235,7 @@ deletetarget (linkedlist *p_lstptr, char *username)
         p_prev->next = current->next;
         free(current);
         p_lstptr->nodecount--;
-        return data;
+        return 1;
     }
 }
 
@@ -244,16 +243,15 @@ deletetarget (linkedlist *p_lstptr, char *username)
 /// @param lstPtr pointer to linked list
 /// @return username of elemement removed
 /// @warning linked list has to be initialized before calling this function
-char *
+int
 deletefirst (linkedlist *p_lstptr)
 {
     if (p_lstptr->nodecount == 0)
     {
-        return NULL;
+        return 0;
     }
 
     node *first = p_lstptr->head;
-    char *data  = first->username;
 
     if (p_lstptr->nodecount == 1)
     {
@@ -268,25 +266,24 @@ deletefirst (linkedlist *p_lstptr)
     }
     free(first);
     p_lstptr->nodecount--;
-    return data;
+    return 1;
 }
 
 /// @brief deletes last element in a linked list
 /// @param lstPtr pointer to linked list
 /// @return username of elemement removed
 /// @warning linked list has to be initialized before calling this function
-char *
+int
 deletelast (linkedlist *p_lstptr)
 {
     // if linked list is empty
     if (p_lstptr->nodecount == 0)
     {
-        return NULL; // returning absurd value to caller
+        return 0;
     }
 
     node *current = p_lstptr->head;
     node *last    = p_lstptr->tail;
-    char *data    = last->username;
 
     if (p_lstptr->nodecount == 1)
     {
@@ -307,7 +304,7 @@ deletelast (linkedlist *p_lstptr)
     }
     free(last);
     p_lstptr->nodecount--;
-    return data;
+    return 1;
 }
 
 /// @brief destroys a linked list

@@ -220,16 +220,21 @@ bool tpool_add_work(tpool_t *tm, thread_func_t func, void *arg) {
   }
 
   work = tpool_work_create(func, arg);
+
   if (work == NULL)
   {
     return false;
   }
 
   pthread_mutex_lock(&(tm->work_mutex));
-  if (tm->work_first == NULL) {
+
+  if (tm->work_first == NULL)
+  {
     tm->work_first = work;
     tm->work_last = tm->work_first;
-  } else {
+  }
+  else
+  {
     tm->work_last->next = work;
     tm->work_last = work;
   }
@@ -242,15 +247,21 @@ bool tpool_add_work(tpool_t *tm, thread_func_t func, void *arg) {
 
 void tpool_wait(tpool_t *tm) {
   if (tm == NULL)
+  {
     return;
+  }
 
   pthread_mutex_lock(&(tm->work_mutex));
-  while (1) {
+
+  while (1)
+  {
     if ((!tm->stop && tm->working_cnt != 0) ||
         (tm->stop && tm->thread_cnt != 0)) // should check if work in queue
     {
       pthread_cond_wait(&(tm->working_cond), &(tm->work_mutex));
-    } else {
+    }
+    else
+    {
       break;
     }
   }

@@ -41,7 +41,7 @@ node *
 find_with_password (linkedlist *p_lstptr,
                     char       *username,
                     char       *password);
-char *deletefirst(linkedlist *);
-char *deletelast(linkedlist *);
-char *deletetarget(linkedlist *, char *username);
+int deletefirst(linkedlist *);
+int deletelast(linkedlist *);
+int deletetarget(linkedlist *, char *username);
 #endif //

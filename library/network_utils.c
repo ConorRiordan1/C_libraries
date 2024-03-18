@@ -22,9 +22,9 @@ create_socket6(int my_port)
     struct sockaddr_in6 server_address;
     memset(&server_address, 0, sizeof(server_address)); // Initialize to zero
 
-    int server_fd = -1;
+    server_fd = socket(AF_INET6, SOCK_STREAM, 0);
 
-    if ((server_fd = socket(AF_INET6, SOCK_STREAM, 0)) == -1)
+    if (server_fd == -1)
     {
         printf("Socket Failed");
         goto EXIT;
@@ -78,9 +78,9 @@ create_socket4(int my_port)
     helgrind_printf("launching ipv4 enabled server\n", NULL);
     struct sockaddr_in address;
 
-    int server_fd = -1;
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (0 == (server_fd = socket(AF_INET, SOCK_STREAM, 0)))
+    if ( 0 > server_fd)
     {
         printf("Socket Failed");
         goto EXIT;
@@ -154,7 +154,7 @@ check_for_timeouts(client_t * clients, int num_clients)
 {
     time_t current_time = time(NULL);
 
-    for (int idx = 0; idx < num_clients; ++idx)
+    for (int idx = 1; idx < num_clients; ++idx) // look int 1 or zeo
     {
 
         if ((clients[idx].socket_fd > 0))
@@ -209,7 +209,6 @@ process_existing_client(int          idx,
     {
         client_sockets[idx].last_message_time = time(NULL);
 		printf("i got data\n");
-		fflush(stdout);
         process_data(
             &client_sockets[idx], buffer, valread, p_maplist, p_accountlist);
         free(buffer);
@@ -279,7 +278,7 @@ server(linkedlist * p_maplist, linkedlist * p_accountlist, int port, int ipv)
     }
 
     // our server
-    int server_fd = -1;
+    server_fd = -1;
 
     if (IPV6 == ipv)
     {
@@ -378,7 +377,6 @@ cleanup_sockets()
     for (int idx = 0; idx < CONN_MAX; idx++)
     {
 
-        fflush(stdout);
         pthread_mutex_destroy(&(client_sockets[idx].mutex));
         close(client_sockets[idx].socket_fd);
     }

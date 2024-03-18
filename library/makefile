@@ -1,4 +1,4 @@
-CC = gcc-10
+CC = gcc
 CFLAGS = -Isrc/helpers -Iinclude -Wall -Wextra -g
 BIN_DIR = bin
 OUT_SERVER = $(BIN_DIR)/stars
