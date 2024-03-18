@@ -171,7 +171,7 @@ validate_type3_command(client_t *   my_client,
                        linkedlist * p_maplist,
                        linkedlist * p_accountlist)
 {
-    linkadd_command_t * command = calloc(1, sizeof(login_command_t));
+    linkadd_command_t * command = calloc(1, sizeof(linkadd_command_t));
 
     command->p_accounts   = p_accountlist;
     command->client       = my_client;
@@ -288,43 +288,43 @@ process_data(client_t *   my_client,
 }
 
 int
-is_ascii(const char * str)
+is_ascii(const char * p_str)
 {
-    while (*str)
+    while (*p_str)
     {
-        if (!isalnum((unsigned char)*str) && !ispunct((unsigned char)*str)
-            && *str != ' ')
+        if (!isalnum((unsigned char)*p_str) && !ispunct((unsigned char)*p_str)
+            && *p_str != ' ')
         {
             return 0;
         }
-        str++;
+        p_str++;
     }
     return 1;
 }
 
 int
-is_ascii_no_punct(const char * str)
+is_ascii_no_punct(const char * p_str)
 {
 
-    while (*str)
+    while (*p_str)
     {
-        if (!isalnum((unsigned char)*str) && *str != ' ')
+        if (!isalnum((unsigned char)*p_str) && *p_str != ' ')
         {
             return 0;
         }
-        str++;
+        p_str++;
     }
 
     return 1;
 }
 
 void
-send_error(client_t * client)
+send_error(client_t * p_client)
 {
     char response = UNKNOWN_ERROR;
-    pthread_mutex_lock(&client->mutex);
-    send(client->socket_fd, &response, sizeof(response), 0);
-    pthread_mutex_unlock(&client->mutex);
+    pthread_mutex_lock(&p_client->mutex);
+    send(p_client->socket_fd, &response, sizeof(response), 0);
+    pthread_mutex_unlock(&p_client->mutex);
     return;
 }
 

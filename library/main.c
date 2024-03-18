@@ -11,14 +11,14 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-volatile sig_atomic_t handler_value = 0;
+volatile sig_atomic_t g_handler_value = 0;
 tpool_t *p_threadpool;
 
 /// @brief Signhandler
 /// @param num SIGINT
 void sighandler(int num) {
   write(STDOUT_FILENO, "Ending file.\n", 13);
-  handler_value = num;
+  g_handler_value = num;
 }
 
 void sigpipe_handler(int signum) {
@@ -29,15 +29,15 @@ void sigpipe_handler(int signum) {
 void endless(char *menu_path, uint32_t port, char *user_file, int ipv) {
   linkedlist *p_lstptr = NULL;
   linkedlist *p_accountptr = NULL;
-  while (handler_value == 0) {
+  while (g_handler_value == 0) {
 
     // init_session_ids();
     // p_threadpool = tpool_create(1);
     server(p_lstptr, p_accountptr, port, ipv);
-    handler_value = 1;
+    g_handler_value = 1;
   };
 
-  if (handler_value != 0) {
+  if (g_handler_value != 0) {
     printf("hi\n");
     // tpool_destroy(p_threadpool);
     // write_map(menu_path, p_lstptr);

@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Isrc/helpers -Iinclude -Wall -Wextra -g
+CFLAGS = -Isrc/helpers -Iinclude -Wall -Wextra -g -std=gnu99
 BIN_DIR = bin
 OUT_SERVER = $(BIN_DIR)/stars
 

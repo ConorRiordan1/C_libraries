@@ -7,15 +7,15 @@
  */
 #include "threadpool.h"
 
-/// @brief private work creation function
+/// @brief private p_work creation function
 /// @param func function pointer with void args
 /// @param p_args argument for the function requested - alloced struct works best
-/// @return NULL on failure. Work on success
+/// @return NULL on failure. p_work on success
 /// @warning If any, args need to be alloced
-/// @warning Does not add work to queue, should not be called out of context
+/// @warning Does not add p_work to queue, should not be called out of context
 static tpool_work_t * tpool_work_create(thread_func_t func_to_do, void * p_args) {
 
-  tpool_work_t *work;
+  tpool_work_t *p_work;
 
   if (func_to_do == NULL)
   {
@@ -23,24 +23,24 @@ static tpool_work_t * tpool_work_create(thread_func_t func_to_do, void * p_args)
   }
   // p_args can be NULL if no args
 
-  work = malloc(sizeof(*work));
+  p_work = malloc(sizeof(*p_work));
 
-  if (NULL == work)
+  if (NULL == p_work)
   {
     goto EXIT;
   }
 
-  work->func = func_to_do;
-  work->arg = p_args;
-  work->next = NULL;
-  return work;
+  p_work->func = func_to_do;
+  p_work->arg = p_args;
+  p_work->next = NULL;
+  return p_work;
 
 EXIT:
   return NULL;
 }
 
-/// @brief private work destroy function
-/// @param work work to destroy
+/// @brief private p_work destroy function
+/// @param p_work p_work to destroy
 /// @warning do not call this function outside of context
 static void tpool_work_destroy(tpool_work_t * p_work) {
 
@@ -52,37 +52,37 @@ static void tpool_work_destroy(tpool_work_t * p_work) {
   free(p_work);
 }
 
-/// @brief private get work function. Used by tpool
-/// @param tm threadpool
-/// @return work or NULL if no work
+/// @brief private get p_work function. Used by tpool
+/// @param p_threadpool threadpool
+/// @return p_work or NULL if no p_work
 /// @warning do not call this function out of context
-static tpool_work_t *tpool_work_get(tpool_t *p_tm) {
-  tpool_work_t *work;
+static tpool_work_t *tpool_work_get(tpool_t *p_threadpool) {
+  tpool_work_t *p_work;
 
-  if (p_tm == NULL)
+  if (p_threadpool == NULL)
   {
     goto EXIT;
   }
 
-  work = p_tm->work_first;
+  p_work = p_threadpool->work_first;
 
-  if (work == NULL)
+  if (p_work == NULL)
   {
     goto EXIT;
   }
 
 
-  if (work->next == NULL)
+  if (p_work->next == NULL)
   {
-    p_tm->work_first = NULL;
-    p_tm->work_last = NULL;
+    p_threadpool->work_first = NULL;
+    p_threadpool->work_last = NULL;
   }
   else
   {
-    p_tm->work_first = work->next;
+    p_threadpool->work_first = p_work->next;
   }
 
-  return work;
+  return p_work;
 
 EXIT:
   return NULL;
@@ -92,47 +92,47 @@ EXIT:
 /// @param arg thread pool
 /// @return nothing
 static void *tpool_worker(void *arg) {
-  tpool_t *tm = arg;
-  tpool_work_t *work;
+  tpool_t *p_threadpool = arg;
+  tpool_work_t *p_work;
 
   for(;;)
   {
-    pthread_mutex_lock(&(tm->work_mutex));
+    pthread_mutex_lock(&(p_threadpool->work_mutex));
 
-    while (tm->work_first == NULL && !tm->stop) // avoid spirious wakeups
+    while (p_threadpool->work_first == NULL && !p_threadpool->stop) // avoid spirious wakeups
     {
-      pthread_cond_wait(&(tm->work_cond), &(tm->work_mutex));
+      pthread_cond_wait(&(p_threadpool->work_cond), &(p_threadpool->work_mutex));
     }
 
-    if (tm->stop)
+    if (p_threadpool->stop)
     {
       break;
     }
 
-    work = tpool_work_get(tm); // critical section(for threadpool)
-    tm->working_cnt++;
-    pthread_mutex_unlock(&(tm->work_mutex));
+    p_work = tpool_work_get(p_threadpool); // critical section(for threadpool)
+    p_threadpool->working_cnt++;
+    pthread_mutex_unlock(&(p_threadpool->work_mutex));
 
-    if (work != NULL)
+    if (p_work != NULL)
     { // no longer critical for threadpool
-      work->func(work->arg);
-      tpool_work_destroy(work);
+      p_work->func(p_work->arg);
+      tpool_work_destroy(p_work);
     }
 
-    pthread_mutex_lock(&(tm->work_mutex));
-    tm->working_cnt--;
-    if (!tm->stop && tm->working_cnt == 0 &&
-        tm->work_first == NULL)
+    pthread_mutex_lock(&(p_threadpool->work_mutex));
+    p_threadpool->working_cnt--;
+    if (!p_threadpool->stop && p_threadpool->working_cnt == 0 &&
+        p_threadpool->work_first == NULL)
         {
-          pthread_cond_signal(&(tm->working_cond));
+          pthread_cond_signal(&(p_threadpool->working_cond));
         } // critical section part 2
-    pthread_mutex_unlock(&(tm->work_mutex));
+    pthread_mutex_unlock(&(p_threadpool->work_mutex));
   }
 
   // if break
-  tm->thread_cnt--;
-  pthread_cond_signal(&(tm->working_cond));
-  pthread_mutex_unlock(&(tm->work_mutex));
+  p_threadpool->thread_cnt--;
+  pthread_cond_signal(&(p_threadpool->working_cond));
+  pthread_mutex_unlock(&(p_threadpool->work_mutex));
   return NULL;
 }
 
@@ -142,7 +142,7 @@ static void *tpool_worker(void *arg) {
 tpool_t *tpool_create(size_t num)
 {
 
-  tpool_t *tm;
+  tpool_t * p_threadpool;
   pthread_t thread;
   size_t i;
 
@@ -152,120 +152,121 @@ tpool_t *tpool_create(size_t num)
     num = 2;
   }
 
-  tm = calloc(1, sizeof(*tm));
+  p_threadpool = calloc(1, sizeof(*p_threadpool));
 
-  if (NULL == tm) {
+  if (NULL == p_threadpool) {
     goto EXIT;
   }
 
-  tm->thread_cnt = num;
+  p_threadpool->thread_cnt = num;
 
-  pthread_mutex_init(&(tm->work_mutex), NULL);
+  pthread_mutex_init(&(p_threadpool->work_mutex), NULL);
   printf("init\n");
-  pthread_cond_init(&(tm->work_cond), NULL);
-  pthread_cond_init(&(tm->working_cond), NULL);
+  pthread_cond_init(&(p_threadpool->work_cond), NULL);
+  pthread_cond_init(&(p_threadpool->working_cond), NULL);
 
-  tm->work_first = NULL;
-  tm->work_last = NULL;
+  p_threadpool->work_first = NULL;
+  p_threadpool->work_last = NULL;
 
   for (i = 0; i < num; i++) {
-    pthread_create(&thread, NULL, tpool_worker, tm);
+    pthread_create(&thread, NULL, tpool_worker, p_threadpool);
     pthread_detach(thread);
   }
 
-  return tm;
+  return p_threadpool;
 
 EXIT:
   return NULL;
 }
 
-void tpool_destroy(tpool_t *tm) {
-  tpool_work_t *work;
-  tpool_work_t *work2;
+void tpool_destroy(tpool_t *p_threadpool) {
+  tpool_work_t *p_work;
+  tpool_work_t *p_work2;
 
-  if (tm == NULL)
+  if (p_threadpool == NULL)
   {
     printf("Invalid tpool");
     return;
   }
 
-  pthread_mutex_lock(&(tm->work_mutex));
-  work = tm->work_first;
-  while (work != NULL)
+  pthread_mutex_lock(&(p_threadpool->work_mutex));
+  p_work = p_threadpool->work_first;
+
+  while (p_work != NULL)
   {
-    work2 = work->next;
-    tpool_work_destroy(work);
-    work = work2;
+    p_work2 = p_work->next;
+    tpool_work_destroy(p_work);
+    p_work = p_work2;
   }
 
-  tm->stop = true;
-  pthread_cond_broadcast(&(tm->work_cond));
-  pthread_mutex_unlock(&(tm->work_mutex));
+  p_threadpool->stop = true;
+  pthread_cond_broadcast(&(p_threadpool->work_cond));
+  pthread_mutex_unlock(&(p_threadpool->work_mutex));
 
-  tpool_wait(tm); // experiment with this
+  tpool_wait(p_threadpool); // experiment with this
 
-  pthread_mutex_destroy(&(tm->work_mutex));
-  pthread_cond_destroy(&(tm->work_cond));
-  pthread_cond_destroy(&(tm->working_cond));
+  pthread_mutex_destroy(&(p_threadpool->work_mutex));
+  pthread_cond_destroy(&(p_threadpool->work_cond));
+  pthread_cond_destroy(&(p_threadpool->working_cond));
 
-  free(tm);
+  free(p_threadpool);
 }
 
-bool tpool_add_work(tpool_t *tm, thread_func_t func, void *arg) {
-  tpool_work_t *work;
+bool tpool_add_work(tpool_t *p_threadpool, thread_func_t func, void *arg) {
+  tpool_work_t *p_work;
 
-  if (tm == NULL)
+  if (p_threadpool == NULL)
   {
     return false;
   }
 
-  work = tpool_work_create(func, arg);
+  p_work = tpool_work_create(func, arg);
 
-  if (work == NULL)
+  if (p_work == NULL)
   {
     return false;
   }
 
-  pthread_mutex_lock(&(tm->work_mutex));
+  pthread_mutex_lock(&(p_threadpool->work_mutex));
 
-  if (tm->work_first == NULL)
+  if (p_threadpool->work_first == NULL)
   {
-    tm->work_first = work;
-    tm->work_last = tm->work_first;
+    p_threadpool->work_first = p_work;
+    p_threadpool->work_last = p_threadpool->work_first;
   }
   else
   {
-    tm->work_last->next = work;
-    tm->work_last = work;
+    p_threadpool->work_last->next = p_work;
+    p_threadpool->work_last = p_work;
   }
 
-  pthread_cond_broadcast(&(tm->work_cond));
-  pthread_mutex_unlock(&(tm->work_mutex));
+  pthread_cond_broadcast(&(p_threadpool->work_cond));
+  pthread_mutex_unlock(&(p_threadpool->work_mutex));
 
   return true;
 }
 
-void tpool_wait(tpool_t *tm) {
-  if (tm == NULL)
+void tpool_wait(tpool_t *p_threadpool) {
+  if (p_threadpool == NULL)
   {
     return;
   }
 
-  pthread_mutex_lock(&(tm->work_mutex));
+  pthread_mutex_lock(&(p_threadpool->work_mutex));
 
   while (1)
   {
-    if ((!tm->stop && tm->working_cnt != 0) ||
-        (tm->stop && tm->thread_cnt != 0)) // should check if work in queue
+    if ((!p_threadpool->stop && p_threadpool->working_cnt != 0) ||
+        (p_threadpool->stop && p_threadpool->thread_cnt != 0)) // should check if p_work in queue
     {
-      pthread_cond_wait(&(tm->working_cond), &(tm->work_mutex));
+      pthread_cond_wait(&(p_threadpool->working_cond), &(p_threadpool->work_mutex));
     }
     else
     {
       break;
     }
   }
-  pthread_mutex_unlock(&(tm->work_mutex));
+  pthread_mutex_unlock(&(p_threadpool->work_mutex));
 }
 
 // end of file

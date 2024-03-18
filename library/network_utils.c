@@ -344,11 +344,11 @@ server(linkedlist * p_maplist, linkedlist * p_accountlist, int port, int ipv)
         for (int idx = 1; idx < CONN_MAX; idx++)
         {
 
-            extern volatile sig_atomic_t handler_value;
+            extern volatile sig_atomic_t g_handler_value;
 
             // server not checking for SIGINT after client disconnect, so we
             // double check here.
-            if (0 != handler_value)
+            if (0 != g_handler_value)
             {
                 goto EXIT;
             }
